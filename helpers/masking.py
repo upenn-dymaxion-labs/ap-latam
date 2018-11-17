@@ -4,30 +4,41 @@ from rasterio.enums import MergeAlg
 from rasterio.transform import IDENTITY, guard_transform
 import numpy as np
 
-def getBinaryMask(dataset, shapes, transformed = True, window = None):
-    """
-    Returns a binary mask with respect to the shape polygons overlayed on the raster file
-    
-    Arguments : 
-    dataset : Raster file object
-    shapes : List of Dictionaries, with each dict containing geospatial coordinates of polygon vertices
-    window : A window object specifying the specific window in the raster to be concentrating on. The fina;
-             binary mask is cropped based on the given window
+"""
+Returns a binary mask with respect to the shape polygons overlayed on the raster file
 
-    """
+Parameters
+-------------------- 
+dataset : Raster file object
+shapes : List of Dictionaries, with each dict containing geospatial coordinates of polygon vertices
+window : A window object specifying the specific window in the raster to be concentrating on. The fina;
+         binary mask is cropped based on the given window
+
+"""    
+def getBinaryMask(dataset, shapes, window = None):
+    mask = rasterize(shapes, out_shape = (int(dataset.height), int(dataset.width)), transform = dataset.transform,
+        all_touched = False, fill = 1, default_value = 0)
     
-    
-    mask = rasterize(shapes,out_shape=(int(dataset.height), int(dataset.width)),
-        transform=dataset.transform,
-        all_touched=False,fill=1,default_value=0)
-    
-    if window!=None:
+    if window != None:
         windowed_mask = mask[window.row_off:(window.row_off+window.height) , window.col_off:(window.col_off+window.width)]
         return(windowed_mask)
     else:
         return(mask)
-    
     return(mask)
+
+"""
+Returns back the array with zeroing out the values below threshold
+
+Parameters
+--------------------
+arr : Array of floats
+threshold : Float
+
+"""
+def createMask(arr, threshold):    
+    masked_arr = arr.copy()
+    masked_arr[masked_arr < threshold] = 0.0
+    return(masked_arr)
 
 def rasterize(
         shapes,
@@ -140,28 +151,22 @@ def rasterize(
     _rasterize(valid_shapes, out, transform, all_touched, merge_alg)
     return out
 
-def createMask(x, threshold):    
-    y = x.copy()
-    y[y < threshold] = 0.0
-    return(y)
+"""
+Checks to see if geometry is a valid GeoJSON geometry type or GeometryCollection.
+Geometries must be non-empty, and have at least x, y coordinates.
 
+Note: only the first coordinate is checked for validity.
+
+Parameters
+--------------------
+geom: an object that implements the geo interface or GeoJSON-like object
+
+Returns
+--------------------
+bool: True if object is a valid GeoJSON geometry type
+"""
 def is_valid_geom(geom):
-    """
-    Checks to see if geometry is a valid GeoJSON geometry type or
-    GeometryCollection.
 
-    Geometries must be non-empty, and have at least x, y coordinates.
-
-    Note: only the first coordinate is checked for validity.
-
-    Parameters
-    ----------
-    geom: an object that implements the geo interface or GeoJSON-like object
-
-    Returns
-    -------
-    bool: True if object is a valid GeoJSON geometry type
-    """
 
     geom_types = {'Point', 'MultiPoint', 'LineString', 'LinearRing',
                   'MultiLineString', 'Polygon', 'MultiPolygon'}
