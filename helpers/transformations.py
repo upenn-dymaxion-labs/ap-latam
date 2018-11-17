@@ -28,9 +28,14 @@ Parameters
 -------------------- 
 raster : Raster image. Rasterio object
 shapes : Polygon shape files. Fiona object
+returnCoord : If True, Returns only the geospatial coordinates of the transformed shapes
+              Else, Returns the shape object, coordinates of polygon its CRS and 
+                    the coordinates of the transformed shape in theraster system
+window(Optional) : A window object specifying the specific window in the raster to taken intersection with.
+                   If given:  Consider it, else take full raster object.
 
 """
-def getOverlappingShapes(raster,shapes, returnCoord = False, window = None):    
+def getOverlappingShapes(raster, shapes, returnCoord = False, window = None):    
     if window != None:
         fullBox = window
     else:
@@ -44,13 +49,11 @@ def getOverlappingShapes(raster,shapes, returnCoord = False, window = None):
         t = reproject_shape(shape(shapes[i]['geometry']), shapes.crs, raster.crs)
         intersect = t.intersection(fullWindow)
         if intersect.area > 0 :
-            matchingShapes.append([shapes[i], shape(shapes[i]['geometry']),t])
+            matchingShapes.append([shapes[i], shape(shapes[i]['geometry']), t])
             
     if returnCoord == True:
-        #Return only the geospatial coordinates of the transformed shape
         matchingShapes = [mapping(x[2]) for x in matchingShapes]
     
-        
     return(matchingShapes)
 
 
