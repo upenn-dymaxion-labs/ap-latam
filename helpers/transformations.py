@@ -88,5 +88,32 @@ def getIntersectionArea(raster, window, shapeDict, ratio = True):
     if ratio == True:
         return ( interArea / float(boxArea) )
     else:
-        return interArea
-    
+
+def generateWindowsWithMasks(window_width = 1000, window_height = 1000, step_size = 100):
+    count = 0
+    e = all_raster_files('asd')
+    for k in range(len(e)):
+        r = rasterio.open(e[k])
+        shapes = getOverlappingShapes(r, vector, returnCoord=True)
+        if len(shapes) == 0:
+            continue
+        mask = getBinaryMask(r, shapes)
+        for i in range(0, r.width - window_width, step_size):
+            for j in range(0,r.height - window_height, step_size):
+
+                w = Window(i, j, window_width, window_height)
+                wbox = box(*r.window_bounds(w))
+
+                #Reads all 3 bands and concatenates them
+                img = np.dstack([r.read(i,window=w) for i in range(1,4)])
+
+                window_mask = mask[w.row_off:(w.row_off+w.height) , w.col_off:(w.col_off+w.width)]
+                intersectionArea = 1 - np.sum(window_mask)/1000000;
+                window_mask = window_mask*255  #Convert 0-1 array to 0-255
+                if (intersectionArea > 0.05):
+                    count += 1
+                    name = e[k].split('/')[-1].split('.')[0] + str(i) + "_" + str(j)
+                    print("{} {} Area : {} Name:{}".format(i,j,intersectionArea, name))
+                    imsave("./Patches/" + name + "img.jpg", img)
+                    imsave("./Patches/" + name + "mask.jpg", window_mask)
+                    
