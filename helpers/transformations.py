@@ -124,6 +124,6 @@ def generateWindowsWithMasks(r, rname, shapeFile, window_width = 1000, window_he
                 count += 1
                 name = rname + str(i) + "_" + str(j)
                 print("{} {} Area : {} Name:{}".format(i,j,intersectionArea, name))
-                imsave("./Patches/test/" + name + "img.jpg", img)
-                imsave("./Patches/test/" + name + "mask.jpg", window_mask)
+                imsave("./Patches/" + name + "img.jpg", img)
+                imsave("./Patches/" + name + "mask.jpg", window_mask)
                     
