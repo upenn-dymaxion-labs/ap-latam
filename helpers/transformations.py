@@ -118,7 +118,7 @@ def generateWindowsWithMasks(r, rname, shapeFile, window_width = 1000, window_he
             img = np.dstack([r.read(k,window=w) for k in range(1,4)])
 
             window_mask = mask[w.row_off:(w.row_off+w.height) , w.col_off:(w.col_off+w.width)]
-            intersectionArea = 1 - np.sum(window_mask)/1000000;
+            intersectionArea = 1 - np.sum(window_mask)/(window_width*window_height);
             window_mask = window_mask*255  #Convert 0-1 array to 0-255
             if (intersectionArea > 0.05):
                 count += 1
