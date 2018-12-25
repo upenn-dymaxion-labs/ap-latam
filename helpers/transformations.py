@@ -8,6 +8,7 @@ from helpers.masking import getBinaryMask
 import numpy as np
 from helpers.io_management import all_raster_files
 import rasterio
+import os
 
 """
 Returns a ploygon object with the coordinates projected from source to destination CRS
@@ -95,35 +96,40 @@ def getIntersectionArea(raster, window, shapeDict, ratio = True):
     else:
         return interArea
 
-def generateWindowsWithMasksForRasters(dirname, shapeFile, window_width = 1000, window_height = 1000, step_size = 100):
+def generateWindowsWithMasksForRasters(dirname, output_dir, shapeFile, window_width = 1000, window_height = 1000, step_size = 100):
     rasters = all_raster_files(dirname)
     for k in range(len(rasters)):        
-        name = rasters[k].split('/')[-1].split('.')[0]
-        generateWindowsWithMasks(rasterio.open(rasters[k]), name, shapeFile, window_width, window_height, step_size)
+        generateWindowsWithMasks(rasterio.open(rasters[k]), shapeFile, output_dir, window_width, window_height, step_size)
     
-def generateWindowsWithMasks(r, rname, shapeFile, window_width = 1000, window_height = 1000, step_size = 100):
-    count = 0
-    shapes = getOverlappingShapes(r, shapeFile, returnCoord=True)
+def generateWindowsWithMasks(raster, shapeFile, output_dir, window_width = 1000, window_height = 1000, step_size = 100):
+    shapes = getOverlappingShapes(raster, shapeFile, returnCoord=True)
     if len(shapes) == 0:
         print("No Shapes")
         return
-    mask = getBinaryMask(r, shapes)
-    for i in range(0, r.width - window_width, step_size):
-        for j in range(0,r.height - window_height, step_size):
+    
+    name = raster.name.split("/")[-1][:-4]
+    if (os.path.exists(os.path.join(output_dir, name)) == False) :
+        os.mkdir(os.path.join(output_dir, name))
+    os.chdir(os.path.join(output_dir, name))
+    
+    count = 0
+    
+    mask = getBinaryMask(raster, shapes)
+    for i in range(0, raster.width - window_width, step_size):
+        for j in range(0,raster.height - window_height, step_size):
 
             w = Window(i, j, window_width, window_height)
-#            wbox = box(*r.window_bounds(w))
 
             #Reads all 3 bands and concatenates them
-            img = np.dstack([r.read(k,window=w) for k in range(1,4)])
+            img = np.dstack([raster.read(k,window=w) for k in range(1,4)])
 
-            window_mask = mask[w.row_off:(w.row_off+w.height) , w.col_off:(w.col_off+w.width)]
-            intersectionArea = 1 - np.sum(window_mask)/(window_width*window_height);
-            window_mask = window_mask*255  #Convert 0-1 array to 0-255
+            window_mask = mask[w.row_off:(w.row_off + w.height) , w.col_off:(w.col_off + w.width)]
+            intersectionArea = 1 - np.sum(window_mask) / (window_width * window_height);
+            window_mask = window_mask * 255  #Convert 0-1 array to 0-255
             if (intersectionArea > 0.05):
                 count += 1
-                name = rname + str(i) + "_" + str(j)
+                name = str(i) + "_" + str(j)
                 print("{} {} Area : {} Name:{}".format(i,j,intersectionArea, name))
-                imsave("./Patches/" + name + "img.jpg", img)
-                imsave("./Patches/" + name + "mask.jpg", window_mask)
-                    
+                imsave(name + "img.jpg", img)
+                imsave(name + "mask.jpg", window_mask)
+    os.chdir("../../")
