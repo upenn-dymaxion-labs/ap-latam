@@ -2,6 +2,7 @@ from shapely.geometry import box, shape, mapping
 from rasterio.windows import Window
 from functools import partial
 from skimage.io import imsave
+from skimage import io
 import pyproj
 from shapely.ops import transform
 from helpers.masking import getBinaryMask
@@ -100,6 +101,7 @@ def generateWindowsWithMasksForRasters(dirname, output_dir, shapeFile, window_wi
     rasters = all_raster_files(dirname)
     for k in range(len(rasters)):        
         generateWindowsWithMasks(rasterio.open(rasters[k]), shapeFile, output_dir, window_width, window_height, step_size)
+        break
     
 def generateWindowsWithMasks(raster, shapeFile, output_dir, window_width = 1000, window_height = 1000, step_size = 100):
     shapes = getOverlappingShapes(raster, shapeFile, returnCoord=True)
@@ -116,7 +118,7 @@ def generateWindowsWithMasks(raster, shapeFile, output_dir, window_width = 1000,
     
     mask = getBinaryMask(raster, shapes)
     for i in range(0, raster.width - window_width, step_size):
-        for j in range(0,raster.height - window_height, step_size):
+        for j in range(0, raster.height - window_height, step_size):
 
             w = Window(i, j, window_width, window_height)
 
@@ -133,3 +135,34 @@ def generateWindowsWithMasks(raster, shapeFile, output_dir, window_width = 1000,
                 imsave(name + "img.jpg", img)
                 imsave(name + "mask.jpg", window_mask)
     os.chdir("../../")
+
+def createOutputForRaster(patch_dir, raster_dir, raster_file, window_width = 1000, window_height = 1000, step_size = 100):
+    folder_name = raster_file.split("/")[-1][:-4]
+    os.chdir(os.path.join(patch_dir, folder_name))
+
+    raster = rasterio.open(os.path.join(raster_dir, raster_file))
+    img = np.zeros((raster.height, raster.width))
+    count = np.zeros((raster.height, raster.width))
+    for i in range(0, raster.width - window_width, step_size):
+        for j in range(0, raster.height - window_height, step_size):
+            patch_name = str(i) + "_" + str(j) + "mask.jpg"
+            try:
+                patch = io.imread(patch_name)
+            except:
+                patch = 255 * np.ones((window_height, window_width))
+            img[j : j + window_height, i : i + window_width] = img[j : j + window_height, i : i + window_width] + patch
+            count[j : j + window_height, i : i + window_width] = count[j : j + window_height, i : i + window_width] + 1    
+    img = img / count
+    img = img / 255
+    os.chdir("../../")
+    imsave(raster_file + "_output.jpg", img)
+    
+
+                
+        
+            
+            
+            
+            
+
+

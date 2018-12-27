@@ -5,13 +5,13 @@ import fiona
 from descartes import PolygonPatch
 import matplotlib.pyplot as plt
 from helpers.io_management import all_raster_files
-from helpers.transformations import reproject_shape, getOverlappingShapes, getIntersectionArea, generateWindowsWithMasksForRasters
+from helpers.transformations import *
 from helpers.plotting import getShapeCoords, plotShapesOnRaster
 from helpers.masking import getBinaryMask, createMask
 
 # Main Script
 
-#e = all_raster_files(dirname = '/Users/dishajindal/Documents/ap-latam/aplatam_data/3band/', 'asd')
+#e = all_raster_files(dirname = '/Users/dishajindal/Documents/ap-latam/aplatam_data/3band/')
 #dataset = rasterio.open(e[0])
 
 vector = fiona.open('/Users/dishajindal/Documents/ap-latam/aplatam_data/montevideo_2018_valid.shp')
@@ -28,9 +28,18 @@ vector = fiona.open('/Users/dishajindal/Documents/ap-latam/aplatam_data/montevid
 #    ax.axis('scaled')
 #    plt.show()
 
-#matchingShapes = getOverlappingShapes(dataset, vector, returnCoord = True)
-#b_mask = getBinaryMask(dataset, matchingShapes)
-generateWindowsWithMasksForRasters("/Users/dishajindal/Documents/ap-latam/aplatam_data/3band/", vector)
+#generateWindowsWithMasksForRasters("/Users/dishajindal/Documents/ap-latam/aplatam_data/3band/", "Patches", vector)
 
+# create Actual Binary master for a raster
+#raster = rasterio.open("/Users/dishajindal/Documents/ap-latam/aplatam_data/3band/17MAY17134609_P006_R3C2.tif")
+#matchingShapes = getOverlappingShapes(raster, vector, returnCoord = True)
+#b_mask = getBinaryMask(raster, matchingShapes)
+#imsave("17MAY17134609_P006_R3C2_actual_mask.png", b_mask.astype('float64'))
+
+# Generate Masks
+#generateWindowsWithMasks(rasterio.open("/Users/dishajindal/Documents/ap-latam/aplatam_data/3band/17MAY17134609_P006_R3C2.tif"), vector, "Patches")
+
+# Join Masks to create one output
+createOutputForRaster("Patches", "/Users/dishajindal/Documents/ap-latam/aplatam_data/3band/", "17MAY17134609_P006_R3C2.tif")
 
 
