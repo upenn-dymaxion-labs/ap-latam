@@ -116,7 +116,7 @@ batchSize = 6
 trainFolders = ['17JUN10140042_P003_R2C2','16AUG22134016_P004_R1C1','17JAN07134545_P002_R2C1']
 testFolders = ['17JUN10140042_P003_R1C1']
 
-gen = Generator(dataPath,trainFolders,imgSize)
+gen = GeneratorWithAug(dataPath,trainFolders,imgSize)
 testGen  = Generator(dataPath,testFolders, imgSize)
 
 # img,mask = gen.generate(1).__next__()
@@ -128,7 +128,7 @@ testGen  = Generator(dataPath,testFolders, imgSize)
 epochs=3
 
 model = unet(lossFunc = jaccard_distance_loss)
-model.fit_generator(gen.generate(4),epochs=epochs,verbose=1,validation_data=testGen.generate(5),validation_steps = 5,steps_per_epoch = 100)
+model.fit_generator(gen.generate(4, Resize = [0.5, 1.5]),epochs=epochs,verbose=1,validation_data=testGen.generate(5),validation_steps = 5,steps_per_epoch = 100)
 
 pred,mask,img = evaluateImage(gen, model)
 

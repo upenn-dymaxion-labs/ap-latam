@@ -48,76 +48,77 @@ from keras.callbacks import History
 import gc
 from sklearn import metrics as mt
 from keras.preprocessing import image
+from helpers.augumentations import *
 
 
 class Generator(keras.utils.Sequence):
 
 	
-    def __init__(self,path,folderList,imgSize):
-        
-        self.path = path
-        self.folderList = folderList
-        self.imgSize = imgSize
-        
-        fileList = []
-        
-        for i in range(len(folderList)):
-            files = os.listdir(os.path.join(path,folderList[i]))
-            fileList += [os.path.join(path,folderList[i],x) for x in files]
-            
-        self.imgList = [x for x in fileList if "img" in x]  #Keeping only the RGB map images
-        
-        
-    def __len__(self):
-        
-        return 30
-    
-    def __getitem__(self,index):
-        
-        pairs, targets = self.getBatch(batch_size)
-        
-        return pairs, targets
-        
+	def __init__(self,path,folderList,imgSize):
+		
+		self.path = path
+		self.folderList = folderList
+		self.imgSize = imgSize
+		
+		fileList = []
+		
+		for i in range(len(folderList)):
+			files = os.listdir(os.path.join(path,folderList[i]))
+			fileList += [os.path.join(path,folderList[i],x) for x in files]
+			
+		self.imgList = [x for x in fileList if "img" in x]  #Keeping only the RGB map images
+		
+		
+	def __len__(self):
+		
+		return 30
+	
+	def __getitem__(self,index):
+		
+		pairs, targets = self.getBatch(batch_size)
+		
+		return pairs, targets
+		
 
-     
-        
+	 
+		
 
-    def getBatch(self,batchSize):
-              
-        imgs=[]
-        masks=[]
-        
-        selections = np.random.choice(len(self.imgList),batchSize,replace=False)
-        
-        for i in range(batchSize):
-            
-            img = read_img(self.imgList[selections[i]],self.imgSize)
-            
-            maskFileName = self.imgList[selections[i]].replace("img","mask")
-            
-            mask = read_img(maskFileName,self.imgSize,grayscale=True)
-            
-            imgs.append(img/255.0)
-            mask = invertMask(mask/255.0)
-            masks.append(mask.reshape(mask.shape[0],mask.shape[1],1))
-        
-        imgs = np.array(imgs)
-        masks = np.array(masks)
-            
-          
+	def getBatch(self,batchSize):
+			  
+		imgs=[]
+		masks=[]
+		
+		selections = np.random.choice(len(self.imgList),batchSize,replace=False)
+		
+		for i in range(batchSize):
+			
+			img = read_img(self.imgList[selections[i]],self.imgSize)
+			
+			maskFileName = self.imgList[selections[i]].replace("img","mask")
+			
+			mask = read_img(maskFileName,self.imgSize,grayscale=True)
+			
+			imgs.append(img/255.0)
+			mask = invertMask(mask/255.0)
+			masks.append(mask.reshape(mask.shape[0],mask.shape[1],1))
+		
+		imgs = np.array(imgs)
+		masks = np.array(masks)
+			
+		  
 
-        return( imgs, masks)
-    
-    def on_epoch_end(self):
-        'Updates to be done after each epoch'
-        a = 5
-        
-        
-    def generate(self, batch_size, s="train"):
-        """a generator for batches, so model.fit_generator can be used. """
-        while True:
-            pairs, targets = self.getBatch(batch_size)
-            yield (pairs, targets)
+		return( imgs, masks)
+	
+	def on_epoch_end(self):
+		'Updates to be done after each epoch'
+		a = 5
+		
+		
+	def generate(self, batch_size, s="train"):
+		"""a generator for batches, so model.fit_generator can be used. """
+		while True:
+			pairs, targets = self.getBatch(batch_size)
+			yield (pairs, targets)
 
 
 
@@ -157,35 +158,47 @@ class GeneratorWithAug(keras.utils.Sequence):
 		lenIndex = np.round(Prob*images.shape[0]).astype(int)
 		index = np.unique(np.random.randint(images.shape[0], size = lenIndex))
 		if Addk != None:
-			images[index] = AddConstant(images[index], k = Addk)
+			probApply = np.random.random_sample()
+			if probApply >=0.2:
+				
+				images[index] = AddConstant(images[index], k = Addk)
 		if Multiplyk != None:
-			images[index] = MultiplyConstant(images[index], m = Multiplyk)
+			probApply = np.random.random_sample()
+			if probApply >=0.2:
+				images[index] = MultiplyConstant(images[index], m = Multiplyk)
 		if addNoise != None:
-			images[index] = AddNoisy(images[index], noise_typ = addNoise)
+			probApply = np.random.random_sample()
+			if probApply >=0.2:
+				images[index] = AddNoisy(images[index], noise_typ = addNoise)
 		if invertPixel != None:
-			images[index] = InvertPixel(images[index], P = invertPixel)
+			probApply = np.random.random_sample()
+			if probApply >=0.3:
+				images[index] = InvertPixel(images[index], P = invertPixel)
 		if addBlur != None:
-			images[index] = AddBlur(images[index], BlurType = addBlur)
+			probApply = np.random.random_sample()
+			if probApply >=0.3:
+				images[index] = AddBlur(images[index], BlurType = addBlur)
 		if contrast != None:
-			images[index] = ImageContrastCorrect(images[index], cor = contrast)
+			probApply = np.random.random_sample()
+			if probApply >=0.3:
+				images[index] = ImageContrastCorrect(images[index], cor = contrast)
 		if convolve != None:
-			images[index], masks[index] = ImageConv(images[index], masks[index], convType=convolve)
+			probApply = np.random.random_sample()
+			if probApply >=0.5:
+				images[index], masks[index] = ImageConv(images[index], masks[index], convType=convolve)
 		if flip != None:
-			images[index], masks[index] = imageFlip(images[index], masks[index], flipType = flip)
+			probApply = np.random.random_sample()
+			if probApply >=0.4:
+				images[index], masks[index] = imageFlip(images[index], masks[index], flipType = flip)
 		if transform != None:
-			images[index], masks[index] = imageTransform(images[index], masks[index], transType=transform)
+			probApply = np.random.random_sample()
+			if probApply >=0.6:
+				images[index], masks[index] = imageTransform(images[index], masks[index], transType=transform)
 		if resize != None:
-			ima = []
-			mas = []
-			indexInv = [ i for i in range(images.shape[0]) if i not in index]
-			for i in indexInv:
-				ima.append(images[i])
-				mas.append(masks[i])
-			imag, maks = imageResize(images[index], masks[index], HW=resize)
-			for i in range(len(imag)):
-				ima.append(imag[i])
-				mas.append(maks[i])
-			return (ima, mas)
+			probApply = np.random.random_sample()
+			if probApply >=0.6:
+				images[index], masks[index] = zoomImage(images[index], masks[index], zoom_factor = resize)
+		   
 		
 		
 		
